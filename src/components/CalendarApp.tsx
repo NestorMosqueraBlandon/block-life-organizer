@@ -6,17 +6,27 @@ import CalendarHeader from './CalendarHeader';
 import WeeklyView from './WeeklyView';
 import DailyView from './DailyView';
 import BlockModal from './BlockModal';
+import SettingsModal from './SettingsModal';
+import NotificationsPanel from './NotificationsPanel';
 import { CalendarBlock } from '../types/calendar';
 import { useCalendarDB } from '../hooks/useCalendarDB';
+import { useNotifications } from '../hooks/useNotifications';
+import { useSettings } from '../contexts/SettingsContext';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const CalendarApp = () => {
-  const [currentView, setCurrentView] = useState<'daily' | 'weekly'>('weekly');
+  const { settings } = useSettings();
+  const [currentView, setCurrentView] = useState<'daily' | 'weekly'>(settings.defaultView);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [editingBlock, setEditingBlock] = useState<CalendarBlock | null>(null);
 
   const { blocks, isLoading, error, addBlock, updateBlock, deleteBlock } = useCalendarDB();
+  
+  // Initialize notifications
+  useNotifications(blocks);
 
   const handleAddBlock = () => {
     setEditingBlock(null);
@@ -101,11 +111,19 @@ const CalendarApp = () => {
           </div>
           
           <div className="flex items-center space-x-3">
-            <Button variant="outline" size="sm">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setIsNotificationsOpen(true)}
+            >
               <Bell className="h-4 w-4 mr-2" />
               Notifications
             </Button>
-            <Button variant="outline" size="sm">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setIsSettingsOpen(true)}
+            >
               <Settings className="h-4 w-4 mr-2" />
               Settings
             </Button>
@@ -143,12 +161,27 @@ const CalendarApp = () => {
           )}
         </div>
 
-        {/* Block Modal */}
+        {/* Modals */}
         <BlockModal
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
           onSave={handleSaveBlock}
           editingBlock={editingBlock}
+        />
+
+        <SettingsModal
+          isOpen={isSettingsOpen}
+          onClose={() => setIsSettingsOpen(false)}
+        />
+
+        <NotificationsPanel
+          isOpen={isNotificationsOpen}
+          onClose={() => setIsNotificationsOpen(false)}
+          blocks={blocks}
+          onOpenSettings={() => {
+            setIsNotificationsOpen(false);
+            setIsSettingsOpen(true);
+          }}
         />
       </div>
     </div>
