@@ -309,6 +309,8 @@ const BlockModal = ({ isOpen, onClose, onSave, editingBlock }: BlockModalProps) 
             Cancel
           </Button>
           <Button
+            type="submit"
+            form="block-form"
             onClick={handleSubmit}
             className="bg-blue-600 hover:bg-blue-700"
           >
