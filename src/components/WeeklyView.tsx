@@ -1,6 +1,5 @@
-
 import React from 'react';
-import { format, startOfWeek, addDays, isSameDay } from 'date-fns';
+import { format, startOfWeek, addDays, isSameDay, isAfter, isBefore, parseISO } from 'date-fns';
 import { CalendarBlock, CATEGORY_COLORS } from '../types/calendar';
 import BlockCard from './BlockCard';
 
@@ -15,8 +14,33 @@ const WeeklyView = ({ selectedDate, blocks, onEditBlock, onDeleteBlock }: Weekly
   const weekStart = startOfWeek(selectedDate, { weekStartsOn: 0 });
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
 
+  const expandRecurringBlocks = (blocks: CalendarBlock[], date: Date) => {
+    return blocks.filter(block => {
+      if (!block.recurring) return isSameDay(new Date(block.date), date);
+      const blockStart = parseISO(block.date);
+      const endDate = block.recurring.endDate ? parseISO(block.recurring.endDate) : undefined;
+      if (isAfter(date, blockStart) || isSameDay(date, blockStart)) {
+        if (!endDate || isBefore(date, endDate) || isSameDay(date, endDate)) {
+          if (block.recurring.type === 'daily') return true;
+          if (block.recurring.type === 'weekly') {
+            if (block.recurring.daysOfWeek && block.recurring.daysOfWeek.length > 0) {
+              return block.recurring.daysOfWeek.includes(date.getDay());
+            } else {
+              // fallback for old events
+              return blockStart.getDay() === date.getDay();
+            }
+          }
+          if (block.recurring.type === 'monthly') {
+            return blockStart.getDate() === date.getDate();
+          }
+        }
+      }
+      return false;
+    });
+  };
+
   const getBlocksForDay = (date: Date) => {
-    return blocks.filter(block => isSameDay(new Date(block.date), date));
+    return expandRecurringBlocks(blocks, date);
   };
 
   const timeSlots = Array.from({ length: 24 }, (_, i) => {

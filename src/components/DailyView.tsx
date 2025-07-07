@@ -1,6 +1,5 @@
-
 import React from 'react';
-import { format, isSameDay } from 'date-fns';
+import { format, isSameDay, isAfter, isBefore, parseISO } from 'date-fns';
 import { CalendarBlock } from '../types/calendar';
 import BlockCard from './BlockCard';
 
@@ -11,9 +10,33 @@ interface DailyViewProps {
   onDeleteBlock: (blockId: string) => void;
 }
 
+const expandRecurringBlocks = (blocks: CalendarBlock[], selectedDate: Date) => {
+  return blocks.filter(block => {
+    if (!block.recurring) return isSameDay(new Date(block.date), selectedDate);
+    const blockStart = parseISO(block.date);
+    const endDate = block.recurring.endDate ? parseISO(block.recurring.endDate) : undefined;
+    if (isAfter(selectedDate, blockStart) || isSameDay(selectedDate, blockStart)) {
+      if (!endDate || isBefore(selectedDate, endDate) || isSameDay(selectedDate, endDate)) {
+        if (block.recurring.type === 'daily') return true;
+        if (block.recurring.type === 'weekly') {
+          if (block.recurring.daysOfWeek && block.recurring.daysOfWeek.length > 0) {
+            return block.recurring.daysOfWeek.includes(selectedDate.getDay());
+          } else {
+            // fallback for old events
+            return blockStart.getDay() === selectedDate.getDay();
+          }
+        }
+        if (block.recurring.type === 'monthly') {
+          return blockStart.getDate() === selectedDate.getDate();
+        }
+      }
+    }
+    return false;
+  });
+};
+
 const DailyView = ({ selectedDate, blocks, onEditBlock, onDeleteBlock }: DailyViewProps) => {
-  const dayBlocks = blocks
-    .filter(block => isSameDay(new Date(block.date), selectedDate))
+  const dayBlocks = expandRecurringBlocks(blocks, selectedDate)
     .sort((a, b) => a.startTime.localeCompare(b.startTime));
 
   const timeSlots = Array.from({ length: 24 }, (_, i) => {

@@ -5,11 +5,12 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectLabel, SelectGroup } from '@/components/ui/select';
 import { CalendarBlock, Task, CATEGORY_COLORS } from '../types/calendar';
 import { format } from 'date-fns';
 import { useCustomCategories } from '../hooks/useCustomCategories';
 import CategoryModal from './CategoryModal';
+import { Checkbox as UICheckbox } from '@/components/ui/checkbox';
 
 interface BlockModalProps {
   isOpen: boolean;
@@ -17,6 +18,16 @@ interface BlockModalProps {
   onSave: (block: Omit<CalendarBlock, 'id'>) => void;
   editingBlock?: CalendarBlock | null;
 }
+
+const WEEK_DAYS = [
+  { label: 'Sun', value: 0 },
+  { label: 'Mon', value: 1 },
+  { label: 'Tue', value: 2 },
+  { label: 'Wed', value: 3 },
+  { label: 'Thu', value: 4 },
+  { label: 'Fri', value: 5 },
+  { label: 'Sat', value: 6 },
+];
 
 const BlockModal = ({ isOpen, onClose, onSave, editingBlock }: BlockModalProps) => {
   const { getAllCategories, getCategoryColor } = useCustomCategories();
@@ -28,10 +39,11 @@ const BlockModal = ({ isOpen, onClose, onSave, editingBlock }: BlockModalProps) 
     startTime: '09:00',
     endTime: '10:00',
     date: format(new Date(), 'yyyy-MM-dd'),
-    category: 'work' as keyof typeof CATEGORY_COLORS,
+    category: 'work',
     hasQuiz: false,
     priority: 'medium' as 'low' | 'medium' | 'high',
-    tasks: [] as Task[]
+    tasks: [] as Task[],
+    recurring: undefined as CalendarBlock['recurring']
   });
 
   const [newTaskTitle, setNewTaskTitle] = useState('');
@@ -47,7 +59,8 @@ const BlockModal = ({ isOpen, onClose, onSave, editingBlock }: BlockModalProps) 
         category: editingBlock.category,
         hasQuiz: editingBlock.hasQuiz || false,
         priority: editingBlock.priority || 'medium',
-        tasks: editingBlock.tasks || []
+        tasks: editingBlock.tasks || [],
+        recurring: editingBlock.recurring
       });
     } else {
       setFormData({
@@ -59,12 +72,15 @@ const BlockModal = ({ isOpen, onClose, onSave, editingBlock }: BlockModalProps) 
         category: 'work',
         hasQuiz: false,
         priority: 'medium',
-        tasks: []
+        tasks: [],
+        recurring: undefined
       });
     }
   }, [editingBlock, isOpen]);
 
   const allCategories = getAllCategories();
+  const defaultCategories = allCategories.filter(cat => cat.isDefault);
+  const customCategories = allCategories.filter(cat => !cat.isDefault);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -195,20 +211,38 @@ const BlockModal = ({ isOpen, onClose, onSave, editingBlock }: BlockModalProps) 
                     </div>
                   </SelectTrigger>
                   <SelectContent>
-                    {allCategories.map((category) => (
-                      <SelectItem 
-                        key={category.isDefault ? category.name : category.id} 
-                        value={category.name}
-                      >
-                        <div className="flex items-center space-x-2">
-                          <div
-                            className="w-3 h-3 rounded-full"
-                            style={{ backgroundColor: category.color }}
-                          />
-                          <span className="capitalize">{category.name}</span>
-                        </div>
-                      </SelectItem>
-                    ))}
+                    {defaultCategories.length > 0 && (
+                      <SelectGroup>
+                        <SelectLabel>Default Categories</SelectLabel>
+                        {defaultCategories.map((category) => {
+                          const key = `default-${category.name}`;
+                          return (
+                            <SelectItem key={key} value={category.name}>
+                              <div className="flex items-center space-x-2">
+                                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: category.color }} />
+                                <span className="capitalize">{category.name}</span>
+                              </div>
+                            </SelectItem>
+                          );
+                        })}
+                      </SelectGroup>
+                    )}
+                    {customCategories.length > 0 && (
+                      <SelectGroup>
+                        <SelectLabel>Custom Categories</SelectLabel>
+                        {customCategories.map((category) => {
+                          const key = `custom-${'id' in category ? category.id : category.name}`;
+                          return (
+                            <SelectItem key={key} value={category.name}>
+                              <div className="flex items-center space-x-2">
+                                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: category.color }} />
+                                <span className="capitalize">{category.name}</span>
+                              </div>
+                            </SelectItem>
+                          );
+                        })}
+                      </SelectGroup>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
@@ -288,6 +322,72 @@ const BlockModal = ({ isOpen, onClose, onSave, editingBlock }: BlockModalProps) 
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+
+            {/* Recurrence Options */}
+            <div>
+              <Label htmlFor="recurringType">Recurrence</Label>
+              <Select
+                value={formData.recurring?.type || 'none'}
+                onValueChange={(value: string) => {
+                  setFormData(prev => ({
+                    ...prev,
+                    recurring: value === 'none' ? undefined : { type: value as 'daily' | 'weekly' | 'monthly', endDate: prev.recurring?.endDate }
+                  }));
+                }}
+              >
+                <SelectTrigger className="mt-1 w-40">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None</SelectItem>
+                  <SelectItem value="daily">Daily</SelectItem>
+                  <SelectItem value="weekly">Weekly</SelectItem>
+                  <SelectItem value="monthly">Monthly</SelectItem>
+                </SelectContent>
+              </Select>
+              {formData.recurring && (
+                <div className="mt-2">
+                  <Label htmlFor="recurringEndDate">Repeat until</Label>
+                  <Input
+                    id="recurringEndDate"
+                    type="date"
+                    value={formData.recurring.endDate || ''}
+                    min={formData.date}
+                    onChange={e => setFormData(prev => ({
+                      ...prev,
+                      recurring: prev.recurring ? { ...prev.recurring, endDate: e.target.value } : undefined
+                    }))}
+                    className="mt-1 w-40"
+                  />
+                </div>
+              )}
+              {formData.recurring && formData.recurring.type === 'weekly' && (
+                <div className="mt-2">
+                  <Label>Select days of week</Label>
+                  <div className="flex space-x-2 mt-1">
+                    {WEEK_DAYS.map(day => (
+                      <div key={day.value} className="flex flex-col items-center">
+                        <UICheckbox
+                          checked={formData.recurring?.daysOfWeek?.includes(day.value) || false}
+                          onCheckedChange={checked => {
+                            setFormData(prev => ({
+                              ...prev,
+                              recurring: prev.recurring ? {
+                                ...prev.recurring,
+                                daysOfWeek: checked
+                                  ? [...(prev.recurring.daysOfWeek || []), day.value]
+                                  : (prev.recurring.daysOfWeek || []).filter(d => d !== day.value)
+                              } : undefined
+                            }));
+                          }}
+                        />
+                        <span className="text-xs">{day.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Tasks */}

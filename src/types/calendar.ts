@@ -1,4 +1,3 @@
-
 export interface CalendarBlock {
   id: string;
   title: string;
@@ -12,6 +11,7 @@ export interface CalendarBlock {
   recurring?: {
     type: 'daily' | 'weekly' | 'monthly';
     endDate?: string;
+    daysOfWeek?: number[]; // 0=Sunday, 1=Monday, ...
   };
   hasQuiz?: boolean;
   priority?: 'low' | 'medium' | 'high';

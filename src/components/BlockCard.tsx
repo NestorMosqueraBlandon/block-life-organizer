@@ -1,8 +1,8 @@
-
 import React from 'react';
 import { Edit2, Trash2, CheckSquare, Clock, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CalendarBlock, CATEGORY_COLORS } from '../types/calendar';
+import { useCustomCategories } from '../hooks/useCustomCategories';
 
 interface BlockCardProps {
   block: CalendarBlock;
@@ -12,7 +12,8 @@ interface BlockCardProps {
 }
 
 const BlockCard = ({ block, onEdit, onDelete, compact = false }: BlockCardProps) => {
-  const categoryColor = CATEGORY_COLORS[block.category];
+  const { getCategoryColor } = useCustomCategories();
+  const categoryColor = getCategoryColor(block.category);
   const completedTasks = block.tasks?.filter(task => task.completed).length || 0;
   const totalTasks = block.tasks?.length || 0;
 
@@ -30,6 +31,9 @@ const BlockCard = ({ block, onEdit, onDelete, compact = false }: BlockCardProps)
               compact ? 'text-sm' : 'text-base'
             }`}>
               {block.title}
+              {block.recurring && (
+                <span title="Recurring event" className="ml-2 text-xs text-blue-500">🔁</span>
+              )}
             </h3>
             {block.hasQuiz && (
               <AlertCircle className="h-4 w-4 text-orange-500 flex-shrink-0" />
