@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { X, Plus, Trash2, Calendar, Clock, Type, AlignLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -9,6 +8,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CalendarBlock, Task, CATEGORY_COLORS } from '../types/calendar';
 import { format } from 'date-fns';
+import { useCustomCategories } from '../hooks/useCustomCategories';
+import CategoryModal from './CategoryModal';
 
 interface BlockModalProps {
   isOpen: boolean;
@@ -18,6 +19,9 @@ interface BlockModalProps {
 }
 
 const BlockModal = ({ isOpen, onClose, onSave, editingBlock }: BlockModalProps) => {
+  const { getAllCategories, getCategoryColor } = useCustomCategories();
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+  
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -60,12 +64,14 @@ const BlockModal = ({ isOpen, onClose, onSave, editingBlock }: BlockModalProps) 
     }
   }, [editingBlock, isOpen]);
 
+  const allCategories = getAllCategories();
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     const blockData = {
       ...formData,
-      color: CATEGORY_COLORS[formData.category]
+      color: getCategoryColor(formData.category)
     };
     
     onSave(blockData);
@@ -160,22 +166,49 @@ const BlockModal = ({ isOpen, onClose, onSave, editingBlock }: BlockModalProps) 
               </div>
 
               <div>
-                <Label htmlFor="category">Category</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="category">Category</Label>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsCategoryModalOpen(true)}
+                    className="text-blue-600 hover:text-blue-700"
+                  >
+                    <Plus className="h-3 w-3 mr-1" />
+                    Manage
+                  </Button>
+                </div>
                 <Select
                   value={formData.category}
-                  onValueChange={(value: keyof typeof CATEGORY_COLORS) => 
+                  onValueChange={(value: string) => 
                     setFormData(prev => ({ ...prev, category: value }))
                   }
                 >
                   <SelectTrigger className="mt-1">
-                    <SelectValue />
+                    <div className="flex items-center space-x-2">
+                      <div
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: getCategoryColor(formData.category) }}
+                      />
+                      <SelectValue />
+                    </div>
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="work">Work</SelectItem>
-                    <SelectItem value="study">Study</SelectItem>
-                    <SelectItem value="personal">Personal</SelectItem>
-                    <SelectItem value="meeting">Meeting</SelectItem>
-                    <SelectItem value="break">Break</SelectItem>
+                    {allCategories.map((category) => (
+                      <SelectItem 
+                        key={category.isDefault ? category.name : category.id} 
+                        value={category.name}
+                      >
+                        <div className="flex items-center space-x-2">
+                          <div
+                            className="w-3 h-3 rounded-full"
+                            style={{ backgroundColor: category.color }}
+                          />
+                          <span className="capitalize">{category.name}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -318,6 +351,12 @@ const BlockModal = ({ isOpen, onClose, onSave, editingBlock }: BlockModalProps) 
           </Button>
         </div>
       </div>
+
+      {/* Category Management Modal */}
+      <CategoryModal
+        isOpen={isCategoryModalOpen}
+        onClose={() => setIsCategoryModalOpen(false)}
+      />
     </div>
   );
 };

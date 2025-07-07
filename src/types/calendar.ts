@@ -6,7 +6,7 @@ export interface CalendarBlock {
   startTime: string;
   endTime: string;
   date: string;
-  category: 'work' | 'study' | 'personal' | 'meeting' | 'break';
+  category: string; // Changed from union type to string to support custom categories
   color: string;
   tasks?: Task[];
   recurring?: {
@@ -24,10 +24,20 @@ export interface Task {
   priority?: 'low' | 'medium' | 'high';
 }
 
-export const CATEGORY_COLORS = {
+export interface CustomCategory {
+  id: string;
+  name: string;
+  color: string;
+  createdAt: number;
+}
+
+export const DEFAULT_CATEGORIES = {
   work: '#3B82F6',      // blue
   study: '#10B981',     // green
   personal: '#8B5CF6',  // purple
   meeting: '#F59E0B',   // yellow
   break: '#6B7280'      // gray
 } as const;
+
+// Legacy export for backward compatibility
+export const CATEGORY_COLORS = DEFAULT_CATEGORIES;
