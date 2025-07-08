@@ -54,3 +54,7 @@
     padding: 0.5em;
   }
 }
+
+.block-card {
+  overflow: hidden;
+}

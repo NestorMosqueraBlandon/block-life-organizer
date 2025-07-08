@@ -9,24 +9,26 @@ interface BlockCardProps {
   onEdit: () => void;
   onDelete: () => void;
   compact?: boolean;
+  height?: number;
 }
 
-const BlockCard = ({ block, onEdit, onDelete, compact = false }: BlockCardProps) => {
+const BlockCard = ({ block, onEdit, onDelete, compact = false, height = 120 }: BlockCardProps) => {
   const { getCategoryColor } = useCustomCategories();
   const categoryColor = getCategoryColor(block.category);
   const completedTasks = block.tasks?.filter(task => task.completed).length || 0;
   const totalTasks = block.tasks?.length || 0;
+  
 
   return (
     <div
       className={`rounded-lg shadow-sm border-l-4 bg-white hover:shadow-md transition-shadow duration-200 ${
         compact ? 'p-2' : 'p-4'
       }`}
-      style={{ borderLeftColor: categoryColor }}
+      style={{ borderLeftColor: categoryColor, height }}
     >
       <div className="flex items-start justify-between">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center space-x-2 mb-1">
+          <div className="flex items-start space-x-2 mb-1">
             <h3 className={`font-semibold text-gray-900 truncate ${
               compact ? 'text-sm' : 'text-base'
             }`}>
@@ -40,8 +42,8 @@ const BlockCard = ({ block, onEdit, onDelete, compact = false }: BlockCardProps)
             )}
           </div>
           
-          <div className="flex items-center space-x-3 text-sm text-gray-600 mb-2">
-            <div className="flex items-center space-x-1">
+          <div className="flex items-start space-x-3 text-sm text-gray-600 mb-2">
+            <div className="flex items-start space-x-1">
               <Clock className="h-3 w-3" />
               <span>{block.startTime} - {block.endTime}</span>
             </div>

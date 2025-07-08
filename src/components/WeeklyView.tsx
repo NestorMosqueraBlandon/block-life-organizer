@@ -58,6 +58,9 @@ const WeeklyView = ({ selectedDate, blocks, onEditBlock, onDeleteBlock }: Weekly
 
   const [viewingBlock, setViewingBlock] = useState<CalendarBlock | null>(null);
 
+  const PIXELS_PER_HOUR = 49;
+  const PIXELS_PER_MINUTE = PIXELS_PER_HOUR / 60;
+
   return (
     <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
       {/* Week Header */}
@@ -107,14 +110,12 @@ const WeeklyView = ({ selectedDate, blocks, onEditBlock, onDeleteBlock }: Weekly
               {/* Blocks for this day */}
               <div className="absolute inset-0 pointer-events-none">
                 {getBlocksForDay(day).map((block) => {
-                  // Use startTime/endTime directly for block placement
                   const [startHour, startMin] = block.startTime.split(':').map(Number);
                   const [endHour, endMin] = block.endTime.split(':').map(Number);
-                  // Offset by START_HOUR
-                  if (startHour < START_HOUR) return null; // Don't render events before 4am
-                  const top = ((startHour - START_HOUR) * 60 + startMin) * (49 / 60); // 40px per hour
-                  const height = ((endHour * 60 + endMin) - (startHour * 60 + startMin)) * (40 / 60);
-                  
+                  if (startHour < START_HOUR) return null;
+                  const top = ((startHour - START_HOUR) * 60 + startMin) * PIXELS_PER_MINUTE;
+                  console.log(((endHour * 60 + endMin) - (startHour * 60 + startMin)))
+                  const height = ((endHour * 60 + endMin) - (startHour * 60 + startMin)) * PIXELS_PER_MINUTE;
                   return (
                     <div
                       key={block.id}
@@ -130,6 +131,7 @@ const WeeklyView = ({ selectedDate, blocks, onEditBlock, onDeleteBlock }: Weekly
                         onEdit={() => onEditBlock(block)}
                         onDelete={() => onDeleteBlock(block.id)}
                         compact
+                        height={height}
                       />
                     </div>
                   );
