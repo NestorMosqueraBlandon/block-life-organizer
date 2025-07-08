@@ -1,73 +1,97 @@
-# Welcome to your Lovable project
+# Block Life Organizer
 
-## Project info
+A modern, full-stack calendar and productivity app with user authentication, recurring events, custom categories, notifications, and mobile support.
 
-**URL**: https://lovable.dev/projects/b7169c34-b382-43be-b297-06d1a61727d6
+---
 
-## How can I edit this code?
+## Features
+- User registration/login (JWT, MongoDB)
+- Password reset via email (Resend)
+- CRUD for events (with recurring support)
+- Custom and default categories
+- Mobile responsive UI
+- Secure backend (helmet, CORS, rate limiting)
+- Production-ready deployment
 
-There are several ways of editing your application.
+---
 
-**Use Lovable**
+## 1. Backend Setup (Node.js/Express/MongoDB)
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/b7169c34-b382-43be-b297-06d1a61727d6) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+### a. Variables de entorno
+Crea un archivo `.env` en la carpeta `backend/` con:
+```env
+MONGODB_URI=tu_uri_de_mongodb
+JWT_SECRET=una_clave_secreta_fuerte
+CORS_ORIGIN=https://tu-dominio-frontend.com
+PORT=4000
+RESEND_API_KEY=tu_api_key_de_resend
+RESEND_FROM_EMAIL=tu_email_verificado@tudominio.com
 ```
 
-**Edit a file directly in GitHub**
+### b. Instalación y ejecución
+```bash
+cd backend
+npm install
+npm run start # o npm run dev para desarrollo
+```
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### c. Despliegue recomendado
+- Render, Railway, Fly.io, Heroku, etc.
+- Configura las variables de entorno en el panel del proveedor.
+- Asegúrate de que el puerto sea el 4000 (o el que elijas en `.env`).
+- El backend debe estar accesible por HTTPS.
 
-**Use GitHub Codespaces**
+---
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## 2. Frontend Setup (React/Vite)
 
-## What technologies are used for this project?
+### a. Variables de entorno
+Crea un archivo `.env` en la raíz del frontend con:
+```env
+VITE_API_URL=https://tu-backend-en-produccion.com/api
+```
 
-This project is built with:
+### b. Instalación y build
+```bash
+npm install
+npm run build
+```
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+### c. Despliegue recomendado
+- Vercel, Netlify, Firebase Hosting, etc.
+- Sube la carpeta `dist/` generada por Vite.
+- Configura el dominio y asegúrate de que apunte al build de producción.
 
-## How can I deploy this project?
+---
 
-Simply open [Lovable](https://lovable.dev/projects/b7169c34-b382-43be-b297-06d1a61727d6) and click on Share -> Publish.
+## 3. Pruebas finales
+- Regístrate, inicia sesión, crea, edita y elimina eventos y categorías.
+- Prueba el flujo de recuperación de contraseña.
+- Prueba en móvil y escritorio.
+- Verifica que los emails de Resend lleguen correctamente.
+- Verifica que los eventos se guardan y muestran correctamente.
 
-## Can I connect a custom domain to my Lovable project?
+---
 
-Yes, you can!
+## 4. Seguridad y buenas prácticas
+- Nunca subas `.env` real a GitHub.
+- Usa contraseñas fuertes para JWT y MongoDB.
+- Limita el CORS solo a tu frontend.
+- Activa backups automáticos en MongoDB Atlas.
+- Agrega monitoreo/logs (Sentry, LogRocket, etc.).
+- Configura HTTPS y redirección de HTTP a HTTPS.
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+---
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+## 5. Soporte y mejoras
+- Si quieres Docker, CI/CD, o integración con otros servicios, puedes agregarlo fácilmente.
+- Para nuevas features, abre un issue o pull request.
+
+---
+
+## 6. Créditos
+Desarrollado por [Tu Nombre o Equipo].
+
+---
+
+¡Listo para organizar tu vida como nunca antes! 🚀

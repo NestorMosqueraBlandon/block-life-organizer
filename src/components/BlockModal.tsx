@@ -17,6 +17,7 @@ interface BlockModalProps {
   onClose: () => void;
   onSave: (block: Omit<CalendarBlock, 'id'>) => void;
   editingBlock?: CalendarBlock | null;
+  readOnly?: boolean;
 }
 
 const WEEK_DAYS = [
@@ -29,8 +30,8 @@ const WEEK_DAYS = [
   { label: 'Sat', value: 6 },
 ];
 
-const BlockModal = ({ isOpen, onClose, onSave, editingBlock }: BlockModalProps) => {
-  const { getAllCategories, getCategoryColor } = useCustomCategories();
+const BlockModal = ({ isOpen, onClose, onSave, editingBlock, readOnly }: BlockModalProps) => {
+  const { getAllCategories, getCategoryColor, addCategory, deleteCategory, loading: catLoading, error: catError, refetch: refetchCategories } = useCustomCategories();
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   
   const [formData, setFormData] = useState({
@@ -84,12 +85,17 @@ const BlockModal = ({ isOpen, onClose, onSave, editingBlock }: BlockModalProps) 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+    const { date, startTime, endTime } = formData;
+    const start = `${date}T${startTime}`;
+    const end = `${date}T${endTime}`;
+    const recurring = formData.recurring ? formData.recurring : { type: 'none' };
     const blockData = {
       ...formData,
+      recurring,
+      start,
+      end,
       color: getCategoryColor(formData.category)
-    };
-    
+    } as Omit<CalendarBlock, "id">;
     onSave(blockData);
   };
 
@@ -134,7 +140,7 @@ const BlockModal = ({ isOpen, onClose, onSave, editingBlock }: BlockModalProps) 
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b">
           <h2 className="text-xl font-semibold text-gray-900">
-            {editingBlock ? 'Edit Block' : 'Create New Block'}
+            {editingBlock ? (readOnly ? 'View Block' : 'Edit Block') : 'Create New Block'}
           </h2>
           <Button
             variant="ghost"
@@ -163,6 +169,7 @@ const BlockModal = ({ isOpen, onClose, onSave, editingBlock }: BlockModalProps) 
                   placeholder="Enter block title"
                   required
                   className="mt-1"
+                  disabled={readOnly}
                 />
               </div>
 
@@ -178,6 +185,7 @@ const BlockModal = ({ isOpen, onClose, onSave, editingBlock }: BlockModalProps) 
                   onChange={(e) => setFormData(prev => ({ ...prev, date: e.target.value }))}
                   required
                   className="mt-1"
+                  disabled={readOnly}
                 />
               </div>
 
@@ -200,6 +208,7 @@ const BlockModal = ({ isOpen, onClose, onSave, editingBlock }: BlockModalProps) 
                   onValueChange={(value: string) => 
                     setFormData(prev => ({ ...prev, category: value }))
                   }
+                  disabled={readOnly}
                 >
                   <SelectTrigger className="mt-1">
                     <div className="flex items-center space-x-2">
@@ -259,6 +268,7 @@ const BlockModal = ({ isOpen, onClose, onSave, editingBlock }: BlockModalProps) 
                   onChange={(e) => setFormData(prev => ({ ...prev, startTime: e.target.value }))}
                   required
                   className="mt-1"
+                  disabled={readOnly}
                 />
               </div>
 
@@ -271,6 +281,7 @@ const BlockModal = ({ isOpen, onClose, onSave, editingBlock }: BlockModalProps) 
                   onChange={(e) => setFormData(prev => ({ ...prev, endTime: e.target.value }))}
                   required
                   className="mt-1"
+                  disabled={readOnly}
                 />
               </div>
             </div>
@@ -288,6 +299,7 @@ const BlockModal = ({ isOpen, onClose, onSave, editingBlock }: BlockModalProps) 
                 placeholder="Add details about this block..."
                 className="mt-1"
                 rows={3}
+                disabled={readOnly}
               />
             </div>
 
@@ -300,6 +312,7 @@ const BlockModal = ({ isOpen, onClose, onSave, editingBlock }: BlockModalProps) 
                   onCheckedChange={(checked) => 
                     setFormData(prev => ({ ...prev, hasQuiz: checked as boolean }))
                   }
+                  disabled={readOnly}
                 />
                 <Label htmlFor="hasQuiz">Has Quiz/Test</Label>
               </div>
@@ -311,6 +324,7 @@ const BlockModal = ({ isOpen, onClose, onSave, editingBlock }: BlockModalProps) 
                   onValueChange={(value: 'low' | 'medium' | 'high') => 
                     setFormData(prev => ({ ...prev, priority: value }))
                   }
+                  disabled={readOnly}
                 >
                   <SelectTrigger className="w-32">
                     <SelectValue />
@@ -335,6 +349,7 @@ const BlockModal = ({ isOpen, onClose, onSave, editingBlock }: BlockModalProps) 
                     recurring: value === 'none' ? undefined : { type: value as 'daily' | 'weekly' | 'monthly', endDate: prev.recurring?.endDate }
                   }));
                 }}
+                disabled={readOnly}
               >
                 <SelectTrigger className="mt-1 w-40">
                   <SelectValue />
@@ -359,6 +374,7 @@ const BlockModal = ({ isOpen, onClose, onSave, editingBlock }: BlockModalProps) 
                       recurring: prev.recurring ? { ...prev.recurring, endDate: e.target.value } : undefined
                     }))}
                     className="mt-1 w-40"
+                    disabled={readOnly}
                   />
                 </div>
               )}
@@ -381,6 +397,7 @@ const BlockModal = ({ isOpen, onClose, onSave, editingBlock }: BlockModalProps) 
                               } : undefined
                             }));
                           }}
+                          disabled={readOnly}
                         />
                         <span className="text-xs">{day.label}</span>
                       </div>
@@ -437,19 +454,21 @@ const BlockModal = ({ isOpen, onClose, onSave, editingBlock }: BlockModalProps) 
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end space-x-3 p-6 border-t bg-gray-50">
-          <Button variant="outline" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            form="block-form"
-            onClick={handleSubmit}
-            className="bg-blue-600 hover:bg-blue-700"
-          >
-            {editingBlock ? 'Update Block' : 'Create Block'}
-          </Button>
-        </div>
+        {!readOnly && (
+          <div className="flex items-center justify-end space-x-3 p-6 border-t bg-gray-50">
+            <Button variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              form="block-form"
+              onClick={handleSubmit}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {editingBlock ? 'Update Block' : 'Create Block'}
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Category Management Modal */}

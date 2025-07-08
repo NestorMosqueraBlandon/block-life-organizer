@@ -9,7 +9,7 @@ export interface CalendarBlock {
   color: string;
   tasks?: Task[];
   recurring?: {
-    type: 'daily' | 'weekly' | 'monthly';
+    type: 'none' | 'daily' | 'weekly' | 'monthly';
     endDate?: string;
     daysOfWeek?: number[]; // 0=Sunday, 1=Monday, ...
   };

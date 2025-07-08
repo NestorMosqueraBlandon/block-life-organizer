@@ -47,8 +47,8 @@ const DailyView = ({ selectedDate, blocks, onEditBlock, onDeleteBlock }: DailyVi
   return (
     <div className="bg-white rounded-lg shadow-sm border">
       {/* Day Header */}
-      <div className="p-6 border-b">
-        <h2 className="text-2xl font-bold text-gray-900">
+      <div className="p-3 md:p-6 border-b">
+        <h2 className="text-xl md:text-2xl font-bold text-gray-900">
           {format(selectedDate, 'EEEE, MMMM d, yyyy')}
         </h2>
         <p className="text-gray-600 mt-1">
@@ -58,22 +58,22 @@ const DailyView = ({ selectedDate, blocks, onEditBlock, onDeleteBlock }: DailyVi
 
       {/* Timeline */}
       <div className="relative">
-        <div className="grid grid-cols-12 gap-4 p-6">
+        <div className="grid grid-cols-6 md:grid-cols-12 gap-2 md:gap-4 p-2 md:p-6">
           {/* Time column */}
-          <div className="col-span-2">
+          <div className="col-span-1 md:col-span-2">
             {timeSlots.map((time) => (
-              <div key={time} className="h-16 flex items-start justify-end pr-4">
-                <span className="text-sm text-gray-500 font-medium">{time}</span>
+              <div key={time} className="h-10 md:h-16 flex items-start justify-end pr-1 md:pr-4">
+                <span className="text-[10px] md:text-sm text-gray-500 font-medium">{time}</span>
               </div>
             ))}
           </div>
 
           {/* Content column */}
-          <div className="col-span-10 relative">
+          <div className="col-span-5 md:col-span-10 relative">
             {timeSlots.map((time, index) => (
               <div
                 key={time}
-                className={`h-16 border-b ${
+                className={`h-10 md:h-16 border-b ${
                   index % 2 === 0 ? 'bg-gray-50' : 'bg-white'
                 } rounded-sm`}
               />
@@ -83,14 +83,16 @@ const DailyView = ({ selectedDate, blocks, onEditBlock, onDeleteBlock }: DailyVi
             <div className="absolute inset-0">
               {dayBlocks.map((block) => {
                 const startHour = parseInt(block.startTime.split(':')[0]);
+                const startMin = parseInt(block.startTime.split(':')[1]);
                 const endHour = parseInt(block.endTime.split(':')[0]);
-                const top = startHour * 64; // 64px per hour
-                const height = (endHour - startHour) * 64;
+                const endMin = parseInt(block.endTime.split(':')[1]);
+                const top = (startHour * 60 + startMin) * (40 / 60); // 40px per hour
+                const height = ((endHour * 60 + endMin) - (startHour * 60 + startMin)) * (40 / 60);
                 
                 return (
                   <div
                     key={block.id}
-                    className="absolute left-0 right-0 pr-4"
+                    className="absolute left-0 right-0 md:pr-4"
                     style={{
                       top: `${top}px`,
                       height: `${height}px`,

@@ -1,80 +1,90 @@
-
 import { useState, useEffect } from 'react';
-import { CustomCategory, DEFAULT_CATEGORIES } from '../types/calendar';
 
-const STORAGE_KEY = 'calendar-custom-categories';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
 
 export const useCustomCategories = () => {
-  const [customCategories, setCustomCategories] = useState<CustomCategory[]>([]);
+  const [customCategories, setCustomCategories] = useState([]);
+  const [defaultCategories, setDefaultCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const getToken = () => localStorage.getItem('token');
+
+  const fetchCategories = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`${API_URL}/categories`, {
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+      if (!res.ok) throw new Error('Failed to fetch categories');
+      const data = await res.json();
+      setDefaultCategories(data.default || []);
+      setCustomCategories(data.custom || []);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        setCustomCategories(parsed);
-      } catch (error) {
-        console.error('Failed to parse custom categories:', error);
-      }
-    }
+    fetchCategories();
+    // eslint-disable-next-line
   }, []);
 
-  const saveCategories = (categories: CustomCategory[]) => {
-    setCustomCategories(categories);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(categories));
+  const addCategory = async (name, color) => {
+    try {
+      const res = await fetch(`${API_URL}/categories`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${getToken()}`,
+        },
+        body: JSON.stringify({ name, color }),
+      });
+      if (!res.ok) throw new Error('Failed to add category');
+      await fetchCategories();
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    }
   };
 
-  const addCategory = (name: string, color: string) => {
-    const newCategory: CustomCategory = {
-      id: Date.now().toString(),
-      name: name.toLowerCase(),
-      color,
-      createdAt: Date.now()
-    };
-    
-    const updated = [...customCategories, newCategory];
-    saveCategories(updated);
-    return newCategory;
-  };
-
-  const deleteCategory = (categoryId: string) => {
-    const updated = customCategories.filter(cat => cat.id !== categoryId);
-    saveCategories(updated);
+  const deleteCategory = async (name) => {
+    try {
+      const res = await fetch(`${API_URL}/categories/${encodeURIComponent(name)}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+      if (!res.ok) throw new Error('Failed to delete category');
+      await fetchCategories();
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    }
   };
 
   const getAllCategories = () => {
-    const defaultCats = Object.entries(DEFAULT_CATEGORIES).map(([name, color]) => ({
-      name,
-      color,
-      isDefault: true
-    }));
-    
-    const customCats = customCategories.map(cat => ({
-      name: cat.name,
-      color: cat.color,
-      isDefault: false,
-      id: cat.id
-    }));
-
+    const defaultCats = (defaultCategories || []).map(cat => ({ ...cat, isDefault: true }));
+    const customCats = (customCategories || []).map(cat => ({ ...cat, isDefault: false }));
     return [...defaultCats, ...customCats];
   };
 
-  const getCategoryColor = (categoryName: string) => {
-    // Check default categories first
-    if (categoryName in DEFAULT_CATEGORIES) {
-      return DEFAULT_CATEGORIES[categoryName as keyof typeof DEFAULT_CATEGORIES];
-    }
-    
-    // Check custom categories
-    const customCat = customCategories.find(cat => cat.name === categoryName);
-    return customCat?.color || '#6B7280'; // fallback to gray
+  const getCategoryColor = (name) => {
+    const all = getAllCategories();
+    return all.find(cat => cat.name === name)?.color || '#bdbdbd';
   };
 
   return {
     customCategories,
+    defaultCategories,
+    loading,
+    error,
     addCategory,
     deleteCategory,
     getAllCategories,
-    getCategoryColor
+    getCategoryColor,
+    refetch: fetchCategories,
   };
 };

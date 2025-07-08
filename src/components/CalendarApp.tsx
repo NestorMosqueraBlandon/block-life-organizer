@@ -1,6 +1,5 @@
-
-import React, { useState } from 'react';
-import { Calendar, Plus, Settings, Bell } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Calendar, Plus, Settings, Bell, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import CalendarHeader from './CalendarHeader';
 import WeeklyView from './WeeklyView';
@@ -13,6 +12,8 @@ import { useCalendarDB } from '../hooks/useCalendarDB';
 import { useNotifications } from '../hooks/useNotifications';
 import { useSettings } from '../contexts/SettingsContext';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useNavigate } from 'react-router-dom';
+import { useCustomCategories } from '../hooks/useCustomCategories';
 
 const CalendarApp = () => {
   const { settings } = useSettings();
@@ -24,9 +25,25 @@ const CalendarApp = () => {
   const [editingBlock, setEditingBlock] = useState<CalendarBlock | null>(null);
 
   const { blocks, isLoading, error, addBlock, updateBlock, deleteBlock } = useCalendarDB();
+  const { getAllCategories, refetch: refetchCategories } = useCustomCategories();
   
   // Initialize notifications
   useNotifications(blocks);
+
+  const navigate = useNavigate();
+  const username = localStorage.getItem('username');
+  const name = localStorage.getItem('name');
+
+  useEffect(() => {
+    const openSettings = () => setIsSettingsOpen(true);
+    const openNotifications = () => setIsNotificationsOpen(true);
+    window.addEventListener('open-settings', openSettings);
+    window.addEventListener('open-notifications', openNotifications);
+    return () => {
+      window.removeEventListener('open-settings', openSettings);
+      window.removeEventListener('open-notifications', openNotifications);
+    };
+  }, []);
 
   const handleAddBlock = () => {
     setEditingBlock(null);
@@ -58,6 +75,13 @@ const CalendarApp = () => {
     } catch (error) {
       console.error('Failed to delete block:', error);
     }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('name');
+    localStorage.removeItem('email');
+    navigate('/login');
   };
 
   if (isLoading) {
@@ -97,40 +121,54 @@ const CalendarApp = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-      <div className="container mx-auto px-4 py-6">
+      <div className="container mx-auto px-2 md:px-4 py-4 md:py-6">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 md:mb-8 gap-3 md:gap-0">
           <div className="flex items-center space-x-3">
             <div className="p-2 bg-blue-600 rounded-lg">
               <Calendar className="h-6 w-6 text-white" />
             </div>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Personal Calendar</h1>
-              <p className="text-gray-600">Manage your time blocks efficiently</p>
+            <div className="flex flex-col">
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900 leading-tight">Personal Calendar</h1>
+              <p className="text-gray-600 text-sm md:text-base">Manage your time blocks efficiently</p>
+              {name && (
+                <span className="text-blue-700 text-sm font-semibold mt-1">Welcome, {name}!</span>
+              )}
             </div>
           </div>
-          
-          <div className="flex items-center space-x-3">
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => setIsNotificationsOpen(true)}
-            >
-              <Bell className="h-4 w-4 mr-2" />
-              Notifications
-            </Button>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => setIsSettingsOpen(true)}
-            >
-              <Settings className="h-4 w-4 mr-2" />
-              Settings
-            </Button>
-            <Button onClick={handleAddBlock} className="bg-blue-600 hover:bg-blue-700">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Block
-            </Button>
+          <div className="flex items-center justify-between md:justify-end w-full md:w-auto mt-2 md:mt-0 gap-2 md:gap-3">
+            <div className="flex items-center space-x-2 overflow-x-auto scrollbar-hide">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setIsNotificationsOpen(true)}
+                className="min-w-[40px]"
+              >
+                <Bell className="h-4 w-4 mr-2" />
+                <span className="hidden sm:inline">Notifications</span>
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setIsSettingsOpen(true)}
+                className="min-w-[40px]"
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                <span className="hidden sm:inline">Settings</span>
+              </Button>
+              <Button onClick={handleAddBlock} className="bg-blue-600 hover:bg-blue-700 min-w-[40px]">
+                <Plus className="h-4 w-4 mr-2" />
+                <span className="hidden sm:inline">Add Block</span>
+              </Button>
+            </div>
+            <div className="ml-2 flex-shrink-0 flex items-center space-x-2">
+              <div className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center">
+                <User className="h-5 w-5 text-gray-400" />
+              </div>
+              <Button variant="outline" size="sm" onClick={handleLogout} className="ml-2">
+                Logout
+              </Button>
+            </div>
           </div>
         </div>
 
