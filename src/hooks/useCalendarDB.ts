@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { CalendarBlock } from '../types/calendar';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+const API_URL = import.meta.env.VITE_API_URL || 'https://block-life-organizer.onrender.com/api';
 
 function pad(n: number) {
   return n.toString().padStart(2, '0');
