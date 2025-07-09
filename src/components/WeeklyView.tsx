@@ -4,6 +4,8 @@ import { CalendarBlock, CATEGORY_COLORS } from '../types/calendar';
 import BlockCard from './BlockCard';
 import { Dialog } from '@/components/ui/dialog';
 import { Card } from '@/components/ui/card';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 interface WeeklyViewProps {
   selectedDate: Date;
@@ -61,8 +63,110 @@ const WeeklyView = ({ selectedDate, blocks, onEditBlock, onDeleteBlock }: Weekly
   const PIXELS_PER_HOUR = 49;
   const PIXELS_PER_MINUTE = PIXELS_PER_HOUR / 60;
 
+  // Exportar a PDF mejorado
+  const exportToPDF = async () => {
+    const calendarElement = document.getElementById('weekly-calendar-grid');
+    if (!calendarElement) return;
+    const canvas = await html2canvas(calendarElement, { backgroundColor: '#fff', scale: 2 });
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const margin = 32;
+    let y = margin + 20;
+    // Portada
+    pdf.setFontSize(24);
+    pdf.setFont(undefined, 'bold');
+    pdf.text('Block Life Organizer', pageWidth / 2, y, { align: 'center' });
+    pdf.setFontSize(14);
+    pdf.setFont(undefined, 'normal');
+    y += 28;
+    pdf.text(`Semana: ${format(weekStart, 'd MMM yyyy')} - ${format(addDays(weekStart, 6), 'd MMM yyyy')}`, pageWidth / 2, y, { align: 'center' });
+    y += 20;
+    pdf.setDrawColor('#3B82F6');
+    pdf.setLineWidth(1.2);
+    pdf.line(margin, y, pageWidth - margin, y);
+    y += 16;
+    // Imagen del calendario
+    const imgWidth = pageWidth - margin * 2;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    pdf.addImage(imgData, 'PNG', margin, y, imgWidth, imgHeight);
+    y += imgHeight + 24;
+    // Resumen enriquecido
+    pdf.setFontSize(16);
+    pdf.setFont(undefined, 'bold');
+    pdf.text('Resumen detallado de eventos', margin, y);
+    y += 18;
+    pdf.setFontSize(11);
+    weekDays.forEach((day) => {
+      const dayBlocks = getBlocksForDay(day).sort((a, b) => a.startTime.localeCompare(b.startTime));
+      if (dayBlocks.length > 0) {
+        // Día
+        pdf.setFont(undefined, 'bold');
+        pdf.setTextColor('#3B82F6');
+        pdf.text(`${format(day, 'EEEE d/MM/yyyy')}:`, margin, y);
+        y += 14;
+        pdf.setFont(undefined, 'normal');
+        pdf.setTextColor('#222');
+        dayBlocks.forEach((block) => {
+          // Categoría color
+          pdf.setFillColor(block.color || '#888');
+          pdf.rect(margin, y - 8, 6, 6, 'F');
+          // Título y hora
+          let text = `  ${block.startTime} - ${block.endTime}: ${block.title}`;
+          if (block.priority) text += ` [${block.priority.toUpperCase()}]`;
+          if (block.recurring && block.recurring.type !== 'none') text += ' 🔁';
+          if (block.hasQuiz) text += ' 📝';
+          pdf.text(text, margin + 10, y);
+          y += 12;
+          // Categoría y descripción
+          pdf.setFontSize(10);
+          pdf.setTextColor('#666');
+          pdf.text(`Categoría: ${block.category}`, margin + 18, y);
+          if (block.description) {
+            y += 11;
+            pdf.text(`Descripción: ${block.description}`, margin + 18, y, { maxWidth: pageWidth - margin * 2 - 18 });
+          }
+          // Tareas
+          if (block.tasks && block.tasks.length > 0) {
+            y += 11;
+            pdf.setTextColor('#10B981');
+            block.tasks.forEach(task => {
+              const check = task.completed ? '[✔]' : '[ ]';
+              pdf.text(`${check} ${task.title}`, margin + 28, y);
+              y += 10;
+            });
+            pdf.setTextColor('#666');
+          }
+          pdf.setFontSize(11);
+          pdf.setTextColor('#222');
+          y += 6;
+          if (y > pageHeight - margin - 30) {
+            pdf.addPage();
+            y = margin;
+          }
+        });
+        y += 8;
+      }
+    });
+    // Pie de página
+    pdf.setFontSize(9);
+    pdf.setTextColor('#888');
+    pdf.text(`Exportado el ${format(new Date(), 'd MMM yyyy HH:mm')}`, pageWidth - margin, pageHeight - 12, { align: 'right' });
+    pdf.save(`horario-semanal-${format(weekStart, 'yyyy-MM-dd')}.pdf`);
+  };
+
   return (
     <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
+      {/* Botón de exportar */}
+      <div className="flex justify-end p-2">
+        <button
+          onClick={exportToPDF}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow text-sm font-semibold"
+        >
+          Exportar a PDF
+        </button>
+      </div>
       {/* Week Header */}
       <div className="grid grid-cols-8 md:grid-cols-8 grid-cols-2 border-b md:overflow-visible overflow-x-auto">
         <div className="p-2 md:p-4 text-xs md:text-sm font-medium text-gray-500 border-r">Time</div>
@@ -79,7 +183,7 @@ const WeeklyView = ({ selectedDate, blocks, onEditBlock, onDeleteBlock }: Weekly
       </div>
 
       {/* Calendar Grid */}
-      <div className="relative overflow-x-auto max-h-[600px]">
+      <div id="weekly-calendar-grid" className="relative overflow-x-auto max-h-[600px]">
         <div className="grid grid-cols-8 md:grid-cols-8 grid-cols-2">
           {/* Time column */}
           <div className="border-r">
