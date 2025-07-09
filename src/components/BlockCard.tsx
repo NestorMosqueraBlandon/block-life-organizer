@@ -21,7 +21,7 @@ const BlockCard = ({ block, onEdit, onDelete, compact = false, height = 120 }: B
 
   return (
     <div
-      className={`rounded-lg shadow-sm border-l-4 bg-white hover:shadow-md transition-shadow duration-200 ${
+      className={`rounded-lg shadow-sm border-l-4 overflow-hidden bg-white hover:shadow-md transition-shadow duration-200 ${
         compact ? 'p-2' : 'p-4'
       }`}
       style={{ borderLeftColor: categoryColor, height }}
