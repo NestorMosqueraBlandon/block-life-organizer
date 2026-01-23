@@ -8,15 +8,11 @@ export const useCustomCategories = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const getToken = () => localStorage.getItem('token');
-
   const fetchCategories = async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_URL}/categories`, {
-        headers: { Authorization: `Bearer ${getToken()}` },
-      });
+      const res = await fetch(`${API_URL}/categories`);
       if (!res.ok) throw new Error('Failed to fetch categories');
       const data = await res.json();
       setDefaultCategories(data.default || []);
@@ -39,7 +35,6 @@ export const useCustomCategories = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${getToken()}`,
         },
         body: JSON.stringify({ name, color }),
       });
@@ -55,7 +50,6 @@ export const useCustomCategories = () => {
     try {
       const res = await fetch(`${API_URL}/categories/${encodeURIComponent(name)}`, {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${getToken()}` },
       });
       if (!res.ok) throw new Error('Failed to delete category');
       await fetchCategories();
