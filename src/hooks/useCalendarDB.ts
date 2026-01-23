@@ -46,15 +46,11 @@ export const useCalendarDB = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const getToken = () => localStorage.getItem('token');
-
   const fetchBlocks = async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_URL}/events`, {
-        headers: { Authorization: `Bearer ${getToken()}` },
-      });
+      const res = await fetch(`${API_URL}/events`);
       if (!res.ok) throw new Error('Failed to fetch events');
       const data = await res.json();
       setBlocks(data.map(backendToCalendarBlock));
@@ -77,7 +73,6 @@ export const useCalendarDB = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${getToken()}`,
         },
         body: JSON.stringify(backendData),
       });
@@ -98,7 +93,6 @@ export const useCalendarDB = () => {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${getToken()}`,
         },
         body: JSON.stringify(backendData),
       });
@@ -115,7 +109,6 @@ export const useCalendarDB = () => {
     try {
       const res = await fetch(`${API_URL}/events/${blockId}`, {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${getToken()}` },
       });
       if (!res.ok) throw new Error('Failed to delete event');
       setBlocks(prev => prev.filter(block => block.id !== blockId));
