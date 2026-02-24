@@ -1,71 +1,55 @@
 import { useState, useEffect } from 'react';
+import { DEFAULT_CATEGORIES } from '../types/calendar';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://block-life-organizer.onrender.com/api';
+const STORAGE_KEY = 'custom-categories';
+
+function loadCustomCategories() {
+  try {
+    const data = localStorage.getItem(STORAGE_KEY);
+    return data ? JSON.parse(data) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveCustomCategories(cats: any[]) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(cats));
+}
 
 export const useCustomCategories = () => {
-  const [customCategories, setCustomCategories] = useState([]);
-  const [defaultCategories, setDefaultCategories] = useState([]);
+  const [customCategories, setCustomCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const fetchCategories = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch(`${API_URL}/categories`);
-      if (!res.ok) throw new Error('Failed to fetch categories');
-      const data = await res.json();
-      setDefaultCategories(data.default || []);
-      setCustomCategories(data.custom || []);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const defaultCategories = Object.entries(DEFAULT_CATEGORIES).map(([name, color]) => ({
+    name,
+    color,
+  }));
 
   useEffect(() => {
-    fetchCategories();
-    // eslint-disable-next-line
+    setCustomCategories(loadCustomCategories());
+    setLoading(false);
   }, []);
 
-  const addCategory = async (name, color) => {
-    try {
-      const res = await fetch(`${API_URL}/categories`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ name, color }),
-      });
-      if (!res.ok) throw new Error('Failed to add category');
-      await fetchCategories();
-    } catch (err) {
-      setError(err.message);
-      throw err;
-    }
+  const addCategory = async (name: string, color: string) => {
+    const updated = [...customCategories, { id: Date.now().toString(36), name, color, createdAt: Date.now() }];
+    setCustomCategories(updated);
+    saveCustomCategories(updated);
   };
 
-  const deleteCategory = async (name) => {
-    try {
-      const res = await fetch(`${API_URL}/categories/${encodeURIComponent(name)}`, {
-        method: 'DELETE',
-      });
-      if (!res.ok) throw new Error('Failed to delete category');
-      await fetchCategories();
-    } catch (err) {
-      setError(err.message);
-      throw err;
-    }
+  const deleteCategory = async (id: string) => {
+    const updated = customCategories.filter(c => c.id !== id && c.name !== id);
+    setCustomCategories(updated);
+    saveCustomCategories(updated);
   };
 
   const getAllCategories = () => {
-    const defaultCats = (defaultCategories || []).map(cat => ({ ...cat, isDefault: true }));
-    const customCats = (customCategories || []).map(cat => ({ ...cat, isDefault: false }));
+    const defaultCats = defaultCategories.map(cat => ({ ...cat, isDefault: true }));
+    const customCats = customCategories.map(cat => ({ ...cat, isDefault: false }));
     return [...defaultCats, ...customCats];
   };
 
-  const getCategoryColor = (name) => {
+  const getCategoryColor = (name: string) => {
     const all = getAllCategories();
     return all.find(cat => cat.name === name)?.color || '#bdbdbd';
   };
@@ -79,6 +63,6 @@ export const useCustomCategories = () => {
     deleteCategory,
     getAllCategories,
     getCategoryColor,
-    refetch: fetchCategories,
+    refetch: () => setCustomCategories(loadCustomCategories()),
   };
 };
